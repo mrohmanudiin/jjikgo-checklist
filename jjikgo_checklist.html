@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>JJIKGO Daily Cleanliness Checker</title>
+
+<!-- PWA Meta -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="JJIKGO Check">
+<meta name="theme-color" content="#0A0A0A">
+<meta name="description" content="Real-time collaborative cleanliness checklist for JJIKGO Studio">
+<link rel="manifest" href="manifest.json">
+
+<!-- iOS Splash + Touch Icon (fallback until real icon is generated) -->
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<link rel="stylesheet" href="jjikgo_checklist.css">
+
+
+
+</head>
+<body>
+
+<!-- Screen: Lobby -->
+<div class="screen active" id="screen-lobby">
+  <div class="container lobby">
+    <h1>JJIKGO<br><span>Daily Cleanliness Checker</span></h1>
+    <p class="subtitle">Real-time collaborative checklist</p>
+
+    <div class="form-group"><label>Nama Anda</label><input type="text" id="lobbyName" placeholder="Nama operator"></div>
+    <div class="form-group"><label>Branch</label><input type="text" id="lobbyBranch" placeholder="Serang" value="Serang"></div>
+    <button class="btn btn-primary btn-block" onclick="enterLobby()">Masuk</button>
+    <div class="feedback" id="lobbyFeedback"></div>
+    <div class="conn-status" id="connStatus">
+      <span class="conn-dot"></span>
+      <span class="conn-text">Menghubungkan ke Firebase...</span>
+    </div>
+
+    <div class="start-section" id="startSection">
+      <p class="subtitle" style="margin-bottom:16px">Sesi belum ada. Buat sesi baru:</p>
+      <div class="form-row">
+        <div class="form-group"><label>Date</label><input type="date" id="startDate"></div>
+        <div class="form-group"><label>Manager</label><input type="text" id="startManager" placeholder="Nama Manager"></div>
+      </div>
+      <div class="form-group"><label>Checked By (nama resmi di Excel)</label><input type="text" id="startCheckedBy" placeholder="Nama staff penanggung jawab"></div>
+      <button class="btn btn-primary btn-block" onclick="createSession()">Buat Sesi & Mulai</button>
+    </div>
+  </div>
+</div>
+
+<!-- Screen: Item List -->
+<div class="screen" id="screen-list">
+  <div class="progress-bar" id="progressBar" onclick="openQuickJump()">
+    <span class="progress-text" id="progressText">0/31</span>
+    <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    <span class="online-dot" id="onlineDot"></span>
+    <span class="online-count" id="onlineCount"></span>
+    <span class="progress-hint">&#9776;</span>
+  </div>
+  <div class="container list-screen">
+    <div class="list-header">
+      <div>
+        <h2 id="listTitle">Checklist</h2>
+        <span class="meta" id="listMeta"></span>
+      </div>
+    </div>
+    <div id="listContent"></div>
+    <div class="export-area" id="exportArea"></div>
+  </div>
+</div>
+
+<!-- Screen: Item Detail -->
+<div class="screen" id="screen-detail">
+  <div class="progress-bar" id="detailProgressBar" onclick="openQuickJump()">
+    <span class="progress-text" id="detailProgressText">0/31</span>
+    <div class="progress-track"><div class="progress-fill" id="detailProgressFill" style="width:0%"></div></div>
+    <span class="progress-hint">&#9776;</span>
+  </div>
+  <div class="container detail-screen">
+    <div class="item-card" id="itemCard"></div>
+    <div class="detail-nav" id="detailNav"></div>
+  </div>
+</div>
+
+<!-- Quick Jump Panel -->
+<div class="qj-overlay" id="qjOverlay" onclick="if(event.target===this)closeQuickJump()">
+  <div class="qj-sheet">
+    <div class="qj-header"><span>Lompat ke Item</span><button onclick="closeQuickJump()">&times;</button></div>
+    <div class="qj-body" id="qjBody"></div>
+  </div>
+</div>
+
+<!-- Generic Modal -->
+<div class="qj-overlay" id="modalOverlay" onclick="if(event.target===this)closeModal()">
+  <div class="qj-sheet" id="modalSheet" style="padding:20px;max-height:85vh"></div>
+</div>
+
+<input type="file" class="file-input-hidden" id="photoInput" accept="image/*" capture="environment">
+<div class="toast" id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="jjikgo_checklist.js"></script>
+
+<!-- Service Worker — PWA Install + Offline -->
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').then(function(reg) {
+    console.log('[PWA] Service Worker registered');
+  }).catch(function(err) {
+    console.log('[PWA] SW registration failed:', err);
+  });
+
+  // Show install prompt after first load
+  var deferredPrompt;
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    setTimeout(function() {
+      if (deferredPrompt && confirm('Install JJIKGO Checklist di HP?')) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(function(result) {
+          console.log('[PWA] Install:', result.outcome);
+          deferredPrompt = null;
+        });
+      }
+    }, 5000);
+  });
+}
+</script>
+</body>
+</html>
