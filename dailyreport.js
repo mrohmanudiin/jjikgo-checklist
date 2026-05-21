@@ -21,6 +21,40 @@ var MARKETING = ['Instagram Reel Upload','Instagram Story Upload','TikTok Upload
 var LS_SETTINGS = 'jjikgo_dr_settings';
 var LS_DRAFT = 'jjikgo_dr_draft';
 var LS_CUMULATIVE = 'jjikgo_dr_cumulative';
+var FB_PATH = 'dailysettings/Serang';
+
+var settings = {};
+var cumulative = {};
+var fbDB = null;
+
+function initFirebase(){
+  if(typeof firebase==='undefined') return;
+  try{
+    if(!firebase.apps||!firebase.apps.length) firebase.initializeApp({apiKey:"AIzaSyBNilwTxVcx4r1FECM12mVZ_yM2XhqLoX0",authDomain:"jjikgo-checklist.firebaseapp.com",databaseURL:"https://jjikgo-checklist-default-rtdb.asia-southeast1.firebasedatabase.app",projectId:"jjikgo-checklist"});
+    fbDB = firebase.database();
+  }catch(e){}
+}
+
+function syncSettingsToFirebase(){
+  if(!fbDB) return;
+  fbDB.ref(FB_PATH+'/settings').set(settings).catch(function(){});
+  fbDB.ref(FB_PATH+'/cumulative').set(cumulative).catch(function(){});
+}
+
+function loadSettingsFromFirebase(callback){
+  if(!fbDB){ callback(); return; }
+  fbDB.ref(FB_PATH+'/settings').once('value').then(function(snap){
+    if(snap.exists()){ settings = snap.val(); localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }
+    return fbDB.ref(FB_PATH+'/cumulative').once('value');
+  }).then(function(snap){
+    if(snap.exists()){ cumulative = snap.val(); localStorage.setItem(LS_CUMULATIVE, JSON.stringify(cumulative)); }
+    callback();
+  }).catch(function(){ callback(); });
+}
+
+function saveCumulativeToFirebase(){
+  if(fbDB) fbDB.ref(FB_PATH+'/cumulative').set(cumulative).catch(function(){});
+}
 
 var settings = {};
 var cumulative = {};
@@ -29,17 +63,22 @@ var cumulative = {};
 // INIT
 // ═══════════════════════════════════════════════════════════════════════════
 (function init(){
+  initFirebase();
   loadSettings();
   loadCumulative();
-  var today = new Date().toISOString().split('T')[0];
-  document.getElementById('rDate').value = today;
-  document.getElementById('rStore').value = settings.storeName || '';
-  document.getElementById('rManager').value = settings.managerName || '';
-  document.getElementById('rPreparedBy').value = settings.preparedBy || '';
-  draft = getDraftFromStorage();
-  renderAllReport();
-  restoreDraftToDOM();
-  switchTab('report');
+  loadSettingsFromFirebase(function(){
+    loadSettings();
+    loadCumulative();
+    var today = new Date().toISOString().split('T')[0];
+    document.getElementById('rDate').value = today;
+    document.getElementById('rStore').value = settings.storeName || '';
+    document.getElementById('rManager').value = settings.managerName || '';
+    document.getElementById('rPreparedBy').value = settings.preparedBy || '';
+    draft = getDraftFromStorage();
+    renderAllReport();
+    restoreDraftToDOM();
+    switchTab('report');
+  });
 })();
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -84,12 +123,13 @@ function saveSettings(){
   settings.managerName = document.getElementById('sManager').value.trim();
   settings.preparedBy = document.getElementById('sPreparedBy').value.trim();
   localStorage.setItem(LS_SETTINGS, JSON.stringify(settings));
+  syncSettingsToFirebase();
   document.getElementById('rStore').value = settings.storeName;
   document.getElementById('rManager').value = settings.managerName;
   document.getElementById('rPreparedBy').value = settings.preparedBy;
   renderAllReport();
   updateAllTotals();
-  showToast('Settings disimpan');
+  showToast('Settings disimpan & di-sync');
 }
 
 function loadCumulative(){
@@ -97,7 +137,10 @@ function loadCumulative(){
   if(raw){ try{ cumulative = JSON.parse(raw); }catch(e){} }
 }
 
-function saveCumulative(){ localStorage.setItem(LS_CUMULATIVE, JSON.stringify(cumulative)); }
+function saveCumulative(){
+  localStorage.setItem(LS_CUMULATIVE, JSON.stringify(cumulative));
+  saveCumulativeToFirebase();
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // SETTINGS RENDERING
@@ -261,13 +304,16 @@ function renderCumulativeDisplay(){
   var today = new Date();
   var days = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
   var html='<div class="tbl-row" style="font-weight:700"><span style="width:50px">Tgl</span><span style="flex:1">Revenue</span><span style="flex:1">Expense</span></div>';
+  var totalRev=0, totalExp=0;
   for(var d=1;d<=days;d++){
     var key=String(d);
     var rev=cumulative[key]?cumulative[key].revenue||0:0;
     var exp=cumulative[key]?cumulative[key].expense||0:0;
+    totalRev+=rev; totalExp+=exp;
     var isToday = d===today.getDate();
     html+='<div class="tbl-row'+(isToday?' style="background:rgba(201,168,76,0.1)"':'')+'"><span style="width:50px;font-size:12px">'+d+(isToday?' *':'')+'</span><span style="flex:1">'+fmt(rev)+'</span><span style="flex:1">'+fmt(exp)+'</span></div>';
   }
+  html+='<div class="total-row">TOTAL: IDR '+fmt(totalRev)+' Revenue · IDR '+fmt(totalExp)+' Expense</div>';
   document.getElementById('cumulativeDisplay').innerHTML=html;
 }
 
