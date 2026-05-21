@@ -5,10 +5,10 @@
 
 var CACHE_NAME = 'jjikgo-checklist-v1';
 var FILES_TO_CACHE = [
-  './jjikgo_checklist.html',
-  './jjikgo_checklist.css',
-  './jjikgo_checklist.js',
-  './manifest.json',
+  '/jjikgo_checklist.html',
+  '/jjikgo_checklist.css',
+  '/jjikgo_checklist.js',
+  '/manifest.json',
   'https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js',
   'https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js',
   'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js'
