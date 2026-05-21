@@ -462,59 +462,26 @@ function updateSalaryInfo(){
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// DRAFT (localStorage auto-save for daily report form)
+// DRAFT — single in-memory object, synced to localStorage
 // ═══════════════════════════════════════════════════════════════════════════
-function getReportData(){
+var draft = {};
+
+function loadDraft(){
   var raw = localStorage.getItem(LS_DRAFT);
-  var draft = {};
-  if(raw){ try{draft=JSON.parse(raw);}catch(e){} }
-  return draft;
-}
-
-function saveDraft(){
-  var draft = getReportData();
-  // Save toggle states
-  var eq={}; EQUIPMENT.forEach(function(e){ var el=document.getElementById('eq_'+sanitize(e)); eq[e]=el?el.dataset.state:'Done'; });
-  // We read from the existing draft to preserve what was there
-  saveDraftInner(draft);
-}
-
-function saveDraftInner(draft){
-  // Collect all report form data
-  draft.date = document.getElementById('rDate')?document.getElementById('rDate').value:'';
-  draft.weather = document.getElementById('rWeather')?document.getElementById('rWeather').value:'Bright';
-  draft.selfStudio = { sessions: +(document.getElementById('rSelfSessions')?document.getElementById('rSelfSessions').value:0)||0, persons: +(document.getElementById('rSelfPersons')?document.getElementById('rSelfPersons').value:0)||0, revenue: +(document.getElementById('rSelfRevenue')?document.getElementById('rSelfRevenue').value:0)||0 };
-  // Save qty values
+  if(raw){ try{ draft = JSON.parse(raw); }catch(e){ draft = {}; } }
   if(!draft.qty) draft.qty={};
-  ALL_MENU.forEach(function(m){ draft.qty[m]=reportQty(m); });
-  BOOTH_TYPES.forEach(function(b){ draft.qty[b]=reportQty(b); });
   if(!draft.remarks) draft.remarks={};
-  ALL_MENU.forEach(function(m){ draft.remarks[m]=reportRemark(m); });
-
-  // Preserve existing lists
   if(!draft.expenses) draft.expenses=[];
   if(!draft.refunds) draft.refunds=[];
   if(!draft.shift1) draft.shift1=[];
   if(!draft.shift2) draft.shift2=[];
   if(!draft.inventory) draft.inventory=[];
   if(!draft.complaints) draft.complaints=[];
-
-  // Toggles
   if(!draft.equipment) draft.equipment={};
   if(!draft.cleaning) draft.cleaning={};
   if(!draft.marketing) draft.marketing={};
 
-  draft.influencerName = document.getElementById('rInfluencerName')?document.getElementById('rInfluencerName').value:'';
-  draft.influencerURL = document.getElementById('rInfluencerURL')?document.getElementById('rInfluencerURL').value:'';
-  draft.incident = document.getElementById('rIncident')?document.getElementById('rIncident').value:'';
-  draft.uploadPayments = [document.getElementById('rUpload1')?document.getElementById('rUpload1').value:'',document.getElementById('rUpload2')?document.getElementById('rUpload2').value:'',document.getElementById('rUpload3')?document.getElementById('rUpload3').value:''];
-  draft.deliveryRequests = [document.getElementById('rDelivery1')?document.getElementById('rDelivery1').value:'',document.getElementById('rDelivery2')?document.getElementById('rDelivery2').value:'',document.getElementById('rDelivery3')?document.getElementById('rDelivery3').value:''];
-
-  localStorage.setItem(LS_DRAFT, JSON.stringify(draft));
-}
-
-function loadDraft(){
-  var draft = getReportData();
+  // Restore form fields
   if(draft.date) document.getElementById('rDate').value = draft.date;
   if(draft.weather) document.getElementById('rWeather').value = draft.weather;
   if(draft.selfStudio){
@@ -527,39 +494,31 @@ function loadDraft(){
   if(draft.incident) document.getElementById('rIncident').value=draft.incident;
   if(draft.uploadPayments){ document.getElementById('rUpload1').value=draft.uploadPayments[0]||''; document.getElementById('rUpload2').value=draft.uploadPayments[1]||''; document.getElementById('rUpload3').value=draft.uploadPayments[2]||''; }
   if(draft.deliveryRequests){ document.getElementById('rDelivery1').value=draft.deliveryRequests[0]||''; document.getElementById('rDelivery2').value=draft.deliveryRequests[1]||''; document.getElementById('rDelivery3').value=draft.deliveryRequests[2]||''; }
-  // Qty values loaded after render
+
   setTimeout(function(){
     if(draft.qty){ for(var k in draft.qty){ var el=document.getElementById('qty_'+sanitize(k)); if(el) el.value=draft.qty[k]; } }
     updateAllTotals();
   },200);
 }
 
-function getReportList(key){
-  var raw = localStorage.getItem(LS_DRAFT);
-  var draft = {};
-  if(raw){ try{draft=JSON.parse(raw);}catch(e){} }
-  if(!draft[key]){ draft[key]=[]; localStorage.setItem(LS_DRAFT, JSON.stringify(draft)); }
-  return draft[key];
-}
-
-function saveReportList(key,list){
-  var raw = localStorage.getItem(LS_DRAFT);
-  var draft = {};
-  if(raw){ try{draft=JSON.parse(raw);}catch(e){} }
-  draft[key]=list;
+function saveDraft(){
+  draft.date = document.getElementById('rDate')?document.getElementById('rDate').value:'';
+  draft.weather = document.getElementById('rWeather')?document.getElementById('rWeather').value:'Bright';
+  draft.selfStudio = { sessions: +(document.getElementById('rSelfSessions')?document.getElementById('rSelfSessions').value:0)||0, persons: +(document.getElementById('rSelfPersons')?document.getElementById('rSelfPersons').value:0)||0, revenue: +(document.getElementById('rSelfRevenue')?document.getElementById('rSelfRevenue').value:0)||0 };
+  ALL_MENU.forEach(function(m){ draft.qty[m]=reportQty(m); });
+  ALL_MENU.forEach(function(m){ draft.remarks[m]=reportRemark(m); });
+  BOOTH_TYPES.forEach(function(b){ draft.qty[b]=reportQty(b); });
+  draft.influencerName = document.getElementById('rInfluencerName')?document.getElementById('rInfluencerName').value:'';
+  draft.influencerURL = document.getElementById('rInfluencerURL')?document.getElementById('rInfluencerURL').value:'';
+  draft.incident = document.getElementById('rIncident')?document.getElementById('rIncident').value:'';
+  draft.uploadPayments = [document.getElementById('rUpload1')?document.getElementById('rUpload1').value:'',document.getElementById('rUpload2')?document.getElementById('rUpload2').value:'',document.getElementById('rUpload3')?document.getElementById('rUpload3').value:''];
+  draft.deliveryRequests = [document.getElementById('rDelivery1')?document.getElementById('rDelivery1').value:'',document.getElementById('rDelivery2')?document.getElementById('rDelivery2').value:'',document.getElementById('rDelivery3')?document.getElementById('rDelivery3').value:''];
   localStorage.setItem(LS_DRAFT, JSON.stringify(draft));
 }
 
-// Override saveDraft to persist list changes
-var _origSaveDraft = saveDraft;
-saveDraft = function(){
-  // Sync lists from DOM back to draft
-  syncListsToDraft();
-  _origSaveDraft();
-};
-
-function syncListsToDraft(){
-  // Lists are already managed via getReportList which returns reference to parsed object
+function getReportList(key){
+  if(!draft[key]) draft[key]=[];
+  return draft[key];
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -574,7 +533,6 @@ function toggleSection(id){
 // EXCEL GENERATION
 // ═══════════════════════════════════════════════════════════════════════════
 function generateExcel(){
-  var draft = getReportData();
   var dateVal = document.getElementById('rDate').value;
   if(!dateVal){ showToast('Tanggal wajib diisi'); return; }
   saveDraft();
@@ -828,7 +786,6 @@ function applyBorder(ws,row,colStart,colEnd){
 }
 
 function getExpenseTotal(){
-  var draft = getReportData();
   var list = draft.expenses||[];
   var total=0;
   list.forEach(function(e){ total+=e.amount||0; });
