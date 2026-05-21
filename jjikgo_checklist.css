@@ -101,21 +101,14 @@ label {
 .lobby .feedback { font-size: 13px; color: var(--warning); margin-top: 8px; display: none; }
 .lobby .feedback.show { display: block; }
 
-.conn-status {
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  margin-top: 16px; padding: 8px 12px;
-  background: var(--surface2); border-radius: 20px;
-  font-size: 11px; color: var(--text3);
-}
-.conn-dot {
-  width: 8px; height: 8px; border-radius: 50%;
+.fb-dot {
+  position: fixed; top: 12px; right: 12px; z-index: 300;
+  width: 10px; height: 10px; border-radius: 50%;
   background: var(--text3);
-  flex-shrink: 0;
+  transition: background .5s;
 }
-.conn-status.connected .conn-dot { background: var(--success); }
-.conn-status.connected .conn-text { color: var(--success); }
-.conn-status.error .conn-dot { background: var(--danger); }
-.conn-status.error .conn-text { color: var(--danger); }
+.fb-dot.online { background: var(--success); }
+.fb-dot.offline { background: var(--danger); }
 .start-section { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #2A2A2A; }
 .start-section.show { display: block; }
 

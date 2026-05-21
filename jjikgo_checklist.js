@@ -213,20 +213,23 @@ function showFeedback(msg) {
 }
 
 function updateConnectionStatus() {
-  var fb = document.getElementById('lobbyFeedback');
-  var cs = document.getElementById('connStatus');
-  if (!cs) return;
-
+  var dot = document.getElementById('fbDot');
+  if (!dot) {
+    dot = document.createElement('div');
+    dot.id = 'fbDot';
+    dot.className = 'fb-dot';
+    dot.title = '';
+    document.body.appendChild(dot);
+  }
   if (firebaseReady) {
-    fb.classList.remove('show');
-    cs.className = 'conn-status connected';
-    cs.querySelector('.conn-text').textContent = 'Terhubung ke Firebase';
+    dot.className = 'fb-dot online';
+    dot.title = 'Firebase: Connected';
   } else if (firebaseError) {
-    cs.className = 'conn-status error';
-    cs.querySelector('.conn-text').textContent = firebaseError;
+    dot.className = 'fb-dot offline';
+    dot.title = 'Firebase: ' + firebaseError;
   } else {
-    cs.className = 'conn-status';
-    cs.querySelector('.conn-text').textContent = 'Menghubungkan ke Firebase...';
+    dot.className = 'fb-dot';
+    dot.title = 'Firebase: Connecting...';
   }
 }
 
