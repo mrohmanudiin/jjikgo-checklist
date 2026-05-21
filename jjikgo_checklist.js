@@ -773,7 +773,12 @@ function buildExcel(data) {
       ws.getColumn('F').width = 9;
       ws.getColumn('G').width = 11;
       ws.getColumn('H').width = 28;
-      ws.getColumn('I').width = 42; // Wider for HD photos
+      ws.getColumn('I').width = 22;
+
+      // Display size for images in Excel — small & neat, but source is HD
+      var IMG_DISPLAY_W = 120;
+      var IMG_DISPLAY_H = 90;
+      var IMG_ROW_HEIGHT = 72;
 
       // Row 1 — Title
       ws.mergeCells('A1:I1');
@@ -826,7 +831,7 @@ function buildExcel(data) {
         ws.getCell(row, 7).value = d.forcedC || 'N';
         ws.getCell(row, 8).value = d.comment || '';
 
-        for (var c = 1; c <= 8; c++) {
+        for (var c = 1; c <= 9; c++) {
           var cell = ws.getCell(row, c);
           cell.font = { size: 10 };
           cell.alignment = { vertical: 'middle', wrapText: c === 8 };
@@ -883,7 +888,7 @@ function buildExcel(data) {
         ws.getCell(fr + 1 + ci, 1).font = { size: 10, color: { argb: 'FF666666' } };
       });
 
-      // Embed HD photos — use stored resolution, no further downscale
+      // Embed photos — original full-res source, small neat display
       if (imageJobs.length === 0) {
         resolve(workbook.xlsx.writeBuffer());
         return;
@@ -891,47 +896,29 @@ function buildExcel(data) {
 
       var completed = 0;
       imageJobs.forEach(function(job) {
-        var img = new Image();
-        img.onload = function() {
-          try {
-            var iw = img.width;
-            var ih = img.height;
-            // Scale to fit within Excel embed dimensions while keeping aspect ratio
-            var scale = Math.min(XL_PHOTO_W / iw, XL_PHOTO_H / ih, 1);
-            var ew = Math.round(iw * scale);
-            var eh = Math.round(ih * scale);
+        // Extract base64 from data URL — no re-encode, preserves full resolution
+        var b64 = job.dataUrl.split(',')[1];
+        if (!b64) { completed++; checkDone(); return; }
 
-            // Re-draw at target size for Excel
-            var cvs = document.createElement('canvas');
-            cvs.width = ew;
-            cvs.height = eh;
-            var cx = cvs.getContext('2d');
-            cx.drawImage(img, 0, 0, ew, eh);
-            var b64 = cvs.toDataURL('image/jpeg', 0.85).split(',')[1];
-
-            var imageId = workbook.addImage({ base64: b64, extension: 'jpeg' });
-            ws.addImage(imageId, {
-              tl: { col: 8, row: job.row - 1 },
-              ext: { width: ew, height: eh }
-            });
-            ws.getRow(job.row).height = Math.max(120, eh * 0.75);
-          } catch (imgErr) {
-            ws.getCell(job.row, 9).value = '[Image error]';
-          }
-          completed++;
-          if (completed === imageJobs.length) {
-            resolve(workbook.xlsx.writeBuffer());
-          }
-        };
-        img.onerror = function() {
+        try {
+          var imageId = workbook.addImage({ base64: b64, extension: 'jpeg' });
+          ws.addImage(imageId, {
+            tl: { col: 8, row: job.row - 1 },
+            ext: { width: IMG_DISPLAY_W, height: IMG_DISPLAY_H }
+          });
+          ws.getRow(job.row).height = IMG_ROW_HEIGHT;
+        } catch (imgErr) {
           ws.getCell(job.row, 9).value = '[Image error]';
-          completed++;
-          if (completed === imageJobs.length) {
-            resolve(workbook.xlsx.writeBuffer());
-          }
-        };
-        img.src = job.dataUrl;
+        }
+        completed++;
+        checkDone();
       });
+
+      function checkDone() {
+        if (completed === imageJobs.length) {
+          resolve(workbook.xlsx.writeBuffer());
+        }
+      }
     } catch (e) {
       reject(e);
     }
