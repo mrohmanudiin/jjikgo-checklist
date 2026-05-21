@@ -100,15 +100,6 @@ label {
 .lobby .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .lobby .feedback { font-size: 13px; color: var(--warning); margin-top: 8px; display: none; }
 .lobby .feedback.show { display: block; }
-
-.fb-dot {
-  position: fixed; top: 12px; right: 12px; z-index: 300;
-  width: 10px; height: 10px; border-radius: 50%;
-  background: var(--text3);
-  transition: background .5s;
-}
-.fb-dot.online { background: var(--success); }
-.fb-dot.offline { background: var(--danger); }
 .start-section { display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #2A2A2A; }
 .start-section.show { display: block; }
 

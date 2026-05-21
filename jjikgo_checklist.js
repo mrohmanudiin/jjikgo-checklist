@@ -132,7 +132,6 @@ function initFirebase() {
         firebaseReady = false;
         firebaseError = 'Tidak terhubung ke Firebase. Periksa databaseURL dan rules.';
       }
-      updateConnectionStatus();
     });
   } catch (e) {
     firebaseError = 'Gagal inisialisasi Firebase: ' + e.message;
@@ -164,11 +163,6 @@ function showScreen(name) {
 
   // Photo input handler
   document.getElementById('photoInput').addEventListener('change', handlePhotoSelect);
-
-  // Show connection status after a short delay (wait for Firebase to init)
-  setTimeout(function() {
-    updateConnectionStatus();
-  }, 1500);
 })();
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -210,27 +204,6 @@ function showFeedback(msg) {
   el.textContent = msg;
   el.classList.add('show');
   el.style.color = 'var(--warning)';
-}
-
-function updateConnectionStatus() {
-  var dot = document.getElementById('fbDot');
-  if (!dot) {
-    dot = document.createElement('div');
-    dot.id = 'fbDot';
-    dot.className = 'fb-dot';
-    dot.title = '';
-    document.body.appendChild(dot);
-  }
-  if (firebaseReady) {
-    dot.className = 'fb-dot online';
-    dot.title = 'Firebase: Connected';
-  } else if (firebaseError) {
-    dot.className = 'fb-dot offline';
-    dot.title = 'Firebase: ' + firebaseError;
-  } else {
-    dot.className = 'fb-dot';
-    dot.title = 'Firebase: Connecting...';
-  }
 }
 
 function enterLobby() {
