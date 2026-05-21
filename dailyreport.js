@@ -36,10 +36,9 @@ var cumulative = {};
   document.getElementById('rStore').value = settings.storeName || '';
   document.getElementById('rManager').value = settings.managerName || '';
   document.getElementById('rPreparedBy').value = settings.preparedBy || '';
-  renderAllSettings();
+  draft = getDraftFromStorage();
   renderAllReport();
-  loadDraft();
-  updateAllTotals();
+  restoreDraftToDOM();
   switchTab('report');
 })();
 
@@ -53,7 +52,7 @@ function switchTab(name){
   document.querySelectorAll('.tab-btn').forEach(function(b){
     if(b.textContent.toLowerCase().indexOf(name)>=0) b.classList.add('active');
   });
-  if(name==='report'){ renderAllReport(); updateAllTotals(); }
+  if(name==='report'){ restoreDraftToDOM(); updateAllTotals(); }
   if(name==='settings'){ renderAllSettings(); }
 }
 
@@ -466,22 +465,25 @@ function updateSalaryInfo(){
 // ═══════════════════════════════════════════════════════════════════════════
 var draft = {};
 
-function loadDraft(){
+function getDraftFromStorage(){
   var raw = localStorage.getItem(LS_DRAFT);
-  if(raw){ try{ draft = JSON.parse(raw); }catch(e){ draft = {}; } }
-  if(!draft.qty) draft.qty={};
-  if(!draft.remarks) draft.remarks={};
-  if(!draft.expenses) draft.expenses=[];
-  if(!draft.refunds) draft.refunds=[];
-  if(!draft.shift1) draft.shift1=[];
-  if(!draft.shift2) draft.shift2=[];
-  if(!draft.inventory) draft.inventory=[];
-  if(!draft.complaints) draft.complaints=[];
-  if(!draft.equipment) draft.equipment={};
-  if(!draft.cleaning) draft.cleaning={};
-  if(!draft.marketing) draft.marketing={};
+  var d = {};
+  if(raw){ try{ d = JSON.parse(raw); }catch(e){ d = {}; } }
+  if(!d.qty) d.qty={};
+  if(!d.remarks) d.remarks={};
+  if(!d.expenses) d.expenses=[];
+  if(!d.refunds) d.refunds=[];
+  if(!d.shift1) d.shift1=[];
+  if(!d.shift2) d.shift2=[];
+  if(!d.inventory) d.inventory=[];
+  if(!d.complaints) d.complaints=[];
+  if(!d.equipment) d.equipment={};
+  if(!d.cleaning) d.cleaning={};
+  if(!d.marketing) d.marketing={};
+  return d;
+}
 
-  // Restore form fields
+function restoreDraftToDOM(){
   if(draft.date) document.getElementById('rDate').value = draft.date;
   if(draft.weather) document.getElementById('rWeather').value = draft.weather;
   if(draft.selfStudio){
@@ -494,11 +496,8 @@ function loadDraft(){
   if(draft.incident) document.getElementById('rIncident').value=draft.incident;
   if(draft.uploadPayments){ document.getElementById('rUpload1').value=draft.uploadPayments[0]||''; document.getElementById('rUpload2').value=draft.uploadPayments[1]||''; document.getElementById('rUpload3').value=draft.uploadPayments[2]||''; }
   if(draft.deliveryRequests){ document.getElementById('rDelivery1').value=draft.deliveryRequests[0]||''; document.getElementById('rDelivery2').value=draft.deliveryRequests[1]||''; document.getElementById('rDelivery3').value=draft.deliveryRequests[2]||''; }
-
-  setTimeout(function(){
-    if(draft.qty){ for(var k in draft.qty){ var el=document.getElementById('qty_'+sanitize(k)); if(el) el.value=draft.qty[k]; } }
-    updateAllTotals();
-  },200);
+  if(draft.qty){ for(var k in draft.qty){ var el=document.getElementById('qty_'+sanitize(k)); if(el) el.value=draft.qty[k]; } }
+  updateAllTotals();
 }
 
 function saveDraft(){
