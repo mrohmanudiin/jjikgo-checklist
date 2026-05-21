@@ -3,6 +3,11 @@
   to = "/jjikgo_checklist.html"
   status = 200
 
+[[redirects]]
+  from = "/dailyreport"
+  to = "/dailyreport.html"
+  status = 200
+
 [[headers]]
   for = "/sw.js"
   [headers.values]
