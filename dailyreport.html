@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>JJIKGO Daily Report</title>
+<link rel="stylesheet" href="dailyreport.css">
+</head>
+<body>
+
+<div class="topbar">
+  <button class="tab-btn active" onclick="switchTab('report')">Daily Report</button>
+  <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+</div>
+
+<!-- ═══════════════════ SETTINGS TAB ═══════════════════ -->
+<div class="tab active" id="tab-settings">
+  <div class="container">
+    <div class="section-card" id="settingsStore">
+      <h3>Info Toko</h3>
+      <div class="fg"><label>Nama Store</label><input id="sStore" placeholder="JJIKGO Serang"></div>
+      <div class="fg"><label>Nama Manager</label><input id="sManager" placeholder="M. Rohmanudin"></div>
+      <div class="fg"><label>Prepared by</label><input id="sPreparedBy" placeholder="M. Rohmanudin"></div>
+    </div>
+
+    <div class="section-card">
+      <h3>Daftar Staff</h3>
+      <div id="staffList"></div>
+      <button class="btn btn-sm btn-primary" onclick="addStaff()">+ Tambah Staff</button>
+    </div>
+
+    <div class="section-card">
+      <h3>Harga Menu Cafe</h3>
+      <div id="menuPriceList"></div>
+    </div>
+
+    <div class="section-card">
+      <h3>Harga Photobooth</h3>
+      <div id="boothPriceList"></div>
+    </div>
+
+    <div class="section-card">
+      <h3>Data Cumulative Bulanan</h3>
+      <p class="help">Data revenue & expense dari tgl 1 s/d kemarin. Otomatis ter-update tiap download laporan.</p>
+      <div id="cumulativeTable"></div>
+      <button class="btn btn-sm btn-primary" onclick="recalcCumulative()">Refresh Cumulative</button>
+    </div>
+
+    <button class="btn btn-primary btn-block" onclick="saveSettings()" style="margin:16px 0 40px">Simpan Settings</button>
+  </div>
+</div>
+
+<!-- ═══════════════════ REPORT TAB ═══════════════════ -->
+<div class="tab" id="tab-report">
+  <div class="container">
+
+    <!-- Section 0: Header -->
+    <div class="section-card">
+      <h3>Header Info</h3>
+      <div class="fg"><label>Tanggal</label><input type="date" id="rDate"></div>
+      <div class="fg"><label>Store</label><input id="rStore" readonly></div>
+      <div class="fg"><label>Manager</label><input id="rManager" readonly></div>
+      <div class="fg"><label>Prepared by</label><input id="rPreparedBy" readonly></div>
+      <div class="fg"><label>Cuaca</label><select id="rWeather"><option value="Bright">☀️ Bright</option><option value="Cloudy">🌤 Cloudy</option><option value="Rainy">🌧 Rainy</option><option value="Stormy">⛈ Stormy</option></select></div>
+    </div>
+
+    <!-- Section A: Cafe Sales -->
+    <div class="section-card" id="secA">
+      <div class="sec-header" onclick="toggleSection('secABody')">
+        <h3>A. Daily Sales Cafe</h3><span class="arrow">▼</span>
+      </div>
+      <div class="sec-body" id="secABody">
+        <div id="cafeSalesTable"></div>
+        <div class="total-row" id="cafeTotal"></div>
+      </div>
+    </div>
+
+    <!-- Section B: Booth Sales -->
+    <div class="section-card" id="secB">
+      <div class="sec-header" onclick="toggleSection('secBBody')">
+        <h3>B. Daily Sales by Photo Booth Type</h3><span class="arrow">▼</span>
+      </div>
+      <div class="sec-body" id="secBBody">
+        <div id="boothSalesTable"></div>
+        <div class="fg"><label>Self Studio — Jumlah Sesi</label><input type="number" id="rSelfSessions" min="0" value="0" onchange="updateSelfStudio()"></div>
+        <div class="fg"><label>Self Studio — Jumlah Person</label><input type="number" id="rSelfPersons" min="0" value="0" onchange="updateSelfStudio()"></div>
+        <div class="fg"><label>Self Studio — Revenue (manual)</label><input type="number" id="rSelfRevenue" min="0" value="0"></div>
+        <div class="total-row" id="boothTotal"></div>
+      </div>
+    </div>
+
+    <!-- Section C: Cumulative -->
+    <div class="section-card" id="secC">
+      <div class="sec-header" onclick="toggleSection('secCBody')">
+        <h3>C. Monthly Cumulative Sales</h3><span class="arrow">▼</span>
+      </div>
+      <div class="sec-body" id="secCBody">
+        <div id="cumulativeDisplay"></div>
+      </div>
+    </div>
+
+    <!-- Section D: Expense -->
+    <div class="section-card">
+      <h3>D. Daily Expense</h3>
+      <div id="expenseList"></div>
+      <button class="btn btn-sm btn-primary" onclick="addExpense()">+ Tambah Pengeluaran</button>
+      <div class="total-row" id="expenseTotal"></div>
+    </div>
+
+    <!-- Refund -->
+    <div class="section-card">
+      <h3>Refund</h3>
+      <div id="refundList"></div>
+      <button class="btn btn-sm btn-outline" onclick="addRefund()">+ Tambah Refund</button>
+    </div>
+
+    <!-- Staff Schedule -->
+    <div class="section-card">
+      <h3>Tomorrow Staff Schedule</h3>
+      <div class="sub"><strong>Shift 1 (08.00–16.00)</strong></div>
+      <div id="shift1List"></div>
+      <button class="btn btn-sm btn-primary" onclick="addShift(1)">+ Tambah Staff Shift 1</button>
+      <div class="sub" style="margin-top:12px"><strong>Shift 2 (14.00–22.00)</strong></div>
+      <div id="shift2List"></div>
+      <button class="btn btn-sm btn-primary" onclick="addShift(2)">+ Tambah Staff Shift 2</button>
+      <div class="info-box" id="salaryInfo"></div>
+    </div>
+
+    <!-- Inventory -->
+    <div class="section-card">
+      <h3>DNP Paper & Inventory Status</h3>
+      <div id="inventoryList"></div>
+      <button class="btn btn-sm btn-primary" onclick="addInventory()">+ Tambah Item Inventory</button>
+    </div>
+
+    <!-- Complaint -->
+    <div class="section-card">
+      <h3>Customer Complaint & Google Review</h3>
+      <div id="complaintList"></div>
+      <button class="btn btn-sm btn-primary" onclick="addComplaint()">+ Tambah Entry</button>
+    </div>
+
+    <!-- Equipment -->
+    <div class="section-card">
+      <h3>Equipment Status</h3>
+      <div id="equipmentList"></div>
+    </div>
+
+    <!-- Cleaning -->
+    <div class="section-card">
+      <h3>Cleaning Checklist</h3>
+      <div id="cleaningList"></div>
+    </div>
+
+    <!-- Marketing -->
+    <div class="section-card">
+      <h3>Marketing & SNS Activity</h3>
+      <div id="marketingList"></div>
+      <div class="fg"><label>Influencer's visit</label><input id="rInfluencerName" placeholder="Nama influencer"></div>
+      <div class="fg"><label>Influencer's posting URL</label><input id="rInfluencerURL" placeholder="URL"></div>
+    </div>
+
+    <!-- Incident -->
+    <div class="section-card">
+      <h3>Incident / Special Report</h3>
+      <textarea id="rIncident" placeholder="Tulis laporan insiden..." rows="3"></textarea>
+    </div>
+
+    <!-- HQ Support -->
+    <div class="section-card">
+      <h3>HQ Support Request</h3>
+      <div class="sub">Upload Payment</div>
+      <div class="fg"><input id="rUpload1" placeholder="Item 1"></div>
+      <div class="fg"><input id="rUpload2" placeholder="Item 2"></div>
+      <div class="fg"><input id="rUpload3" placeholder="Item 3"></div>
+      <div class="sub" style="margin-top:12px">Delivery Request</div>
+      <div class="fg"><input id="rDelivery1" placeholder="Item 1"></div>
+      <div class="fg"><input id="rDelivery2" placeholder="Item 2"></div>
+      <div class="fg"><input id="rDelivery3" placeholder="Item 3"></div>
+    </div>
+
+    <button class="btn btn-primary btn-block btn-lg" onclick="generateExcel()" style="margin:16px 0 40px">📥 Download Laporan Excel</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="dailyreport.js"></script>
+</body>
+</html>
