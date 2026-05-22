@@ -325,8 +325,9 @@ function renderCumulativeDisplay(){
     var key=cumKey(d, today);
     var rev=cumulative[key]?cumulative[key].revenue||0:0;
     var exp=cumulative[key]?cumulative[key].expense||0:0;
-    totalRev+=rev; totalExp+=exp;
     var isToday = d===today.getDate();
+    if(rev===0 && exp===0 && !isToday) continue;
+    totalRev+=rev; totalExp+=exp;
     html+='<div class="tbl-row'+(isToday?' style="background:rgba(201,168,76,0.1)"':'')+'"><span style="width:50px;font-size:12px">'+d+(isToday?' *':'')+'</span><span style="flex:1">'+fmt(rev)+'</span><span style="flex:1">'+fmt(exp)+'</span></div>';
   }
   html+='<div class="total-row">TOTAL: IDR '+fmt(totalRev)+' Revenue · IDR '+fmt(totalExp)+' Expense</div>';
@@ -352,20 +353,15 @@ function deleteExpense(i){ var list=getReportList('expenses'); list.splice(i,1);
 function renderRefundList(){
   var list = getReportList('refunds');
   var html='';
-  for(var i=0;i<16;i++){
-    var v = list[i]||0;
-    html+='<div class="tbl-row"><span style="width:30px;font-size:12px;color:var(--text3)">'+(i+1)+'</span><input type="number" value="'+(v||'')+'" placeholder="Nominal Refund" onchange="updateRefund('+i+',+this.value)" style="flex:1"></div>';
-  }
+  list.forEach(function(v,i){
+    html+='<div class="tbl-row"><span style="width:30px;font-size:12px;color:var(--text3)">'+(i+1)+'</span><input type="number" value="'+(v||'')+'" placeholder="Nominal Refund" onchange="updateRefund('+i+',+this.value)" style="flex:1"><button class="tbl-del" onclick="deleteRefund('+i+')">×</button></div>';
+  });
   document.getElementById('refundList').innerHTML=html;
 }
 
-function addRefund(){}
-function updateRefund(i,val){
-  var list=getReportList('refunds');
-  while(list.length<=i) list.push(0);
-  list[i]=val;
-  saveDraft();
-}
+function addRefund(){ var list=getReportList('refunds'); list.push(0); saveDraft(); renderRefundList(); }
+function updateRefund(i,val){ var list=getReportList('refunds'); if(list[i]!==undefined) list[i]=val; saveDraft(); }
+function deleteRefund(i){ var list=getReportList('refunds'); list.splice(i,1); saveDraft(); renderRefundList(); }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // STAFF SCHEDULE
@@ -710,11 +706,14 @@ function generateExcel(){
     ws.getCell('A'+row).value='REFUND Date'; ws.getCell('A'+row).font={bold:true};
     ws.getCell('B'+row).value='Daily Refund (IDR)'; ws.getCell('B'+row).font={bold:true};
     row++;
-    for(var r=0;r<16;r++){
-      ws.getCell('A'+row).value=dateVal;
-      ws.getCell('B'+row).value=(draft.refunds&&draft.refunds[r])?draft.refunds[r]:0;
-      applyBorder(ws,row,1,2); row++;
-    }
+    var refList = draft.refunds||[];
+    refList.forEach(function(v,r){
+      if(v&&v>0){
+        ws.getCell('A'+row).value=dateVal;
+        ws.getCell('B'+row).value=v;
+        applyBorder(ws,row,1,2); row++;
+      }
+    });
     row++;
 
     // Staff Schedule
