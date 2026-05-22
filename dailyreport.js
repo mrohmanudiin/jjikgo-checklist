@@ -687,7 +687,7 @@ function generateExcel(){
       var exp=cumulative[key]?cumulative[key].expense||0:0;
       if(d===today.getDate()){ rev+=cafeRev+boothRev; exp+=getExpenseTotal(); }
       runTotal+=rev-exp;
-      ws.getCell('A'+row).value=pad(d)+'/'+pad(today.getMonth()+1)+'/'+today.getFullYear();
+      ws.getCell('A'+row).value=pad(d);
       ws.getCell('B'+row).value=rev;
       ws.getCell('C'+row).value=exp;
       ws.getCell('D'+row).value=runTotal;
