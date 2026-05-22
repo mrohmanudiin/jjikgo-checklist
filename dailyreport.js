@@ -579,6 +579,11 @@ function getReportList(key){
   return draft[key];
 }
 
+function getReportData(key){
+  if(!draft[key]) draft[key]={};
+  return draft[key];
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // SECTION TOGGLE
 // ═══════════════════════════════════════════════════════════════════════════
