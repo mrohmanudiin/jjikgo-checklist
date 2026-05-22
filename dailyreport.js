@@ -38,16 +38,15 @@ function initFirebase(){
 function syncSettingsToFirebase(){
   if(!fbDB) return;
   fbDB.ref(FB_PATH+'/settings').set(settings).catch(function(){});
-  fbDB.ref(FB_PATH+'/cumulative').set(cumulative).catch(function(){});
 }
 
 function loadSettingsFromFirebase(callback){
   if(!fbDB){ callback(); return; }
   fbDB.ref(FB_PATH+'/settings').once('value').then(function(snap){
-    if(snap.exists()){ settings = snap.val(); localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }
+    if(snap.exists() && snap.val() && Object.keys(snap.val()).length>0){ settings = snap.val(); localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }
     return fbDB.ref(FB_PATH+'/cumulative').once('value');
   }).then(function(snap){
-    if(snap.exists()){ cumulative = snap.val(); localStorage.setItem(LS_CUMULATIVE, JSON.stringify(cumulative)); }
+    if(snap.exists() && snap.val() && Object.keys(snap.val()).length>0){ cumulative = snap.val(); localStorage.setItem(LS_CUMULATIVE, JSON.stringify(cumulative)); }
     callback();
   }).catch(function(){ callback(); });
 }
@@ -56,8 +55,14 @@ function saveCumulativeToFirebase(){
   if(fbDB) fbDB.ref(FB_PATH+'/cumulative').set(cumulative).catch(function(){});
 }
 
-var settings = {};
-var cumulative = {};
+function cumKey(day, date){
+  return date.getFullYear()+'-'+(date.getMonth()+1)+'_'+day;
+}
+
+function currentMonthPrefix(){
+  var t = new Date();
+  return t.getFullYear()+'-'+(t.getMonth()+1)+'_';
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // INIT
@@ -135,6 +140,16 @@ function saveSettings(){
 function loadCumulative(){
   var raw = localStorage.getItem(LS_CUMULATIVE);
   if(raw){ try{ cumulative = JSON.parse(raw); }catch(e){} }
+  var migrated = false;
+  var prefix = currentMonthPrefix();
+  for(var k in cumulative){
+    if(/^\d+$/.test(k)){
+      cumulative[prefix+k] = cumulative[k];
+      delete cumulative[k];
+      migrated = true;
+    }
+  }
+  if(migrated){ localStorage.setItem(LS_CUMULATIVE, JSON.stringify(cumulative)); }
 }
 
 function saveCumulative(){
@@ -194,7 +209,7 @@ function renderCumulativeTable(){
   var days = new Date(today.getFullYear(), today.getMonth()+1, 0).getDate();
   var html='<div class="tbl-row" style="font-weight:700"><span style="width:50px">Tgl</span><span style="flex:1">Revenue</span><span style="flex:1">Expense</span></div>';
   for(var d=1;d<=days;d++){
-    var key = String(d);
+    var key = cumKey(d, today);
     var rev = cumulative[key] ? cumulative[key].revenue||0 : 0;
     var exp = cumulative[key] ? cumulative[key].expense||0 : 0;
     html+='<div class="tbl-row"><span style="width:50px;font-size:12px">'+d+'</span><input type="number" value="'+rev+'" onchange="setCumulative('+d+',\'revenue\',+this.value)" style="flex:1"><input type="number" value="'+exp+'" onchange="setCumulative('+d+',\'expense\',+this.value)" style="flex:1"></div>';
@@ -203,7 +218,8 @@ function renderCumulativeTable(){
 }
 
 function setCumulative(day,field,val){
-  var key = String(day);
+  var today = new Date();
+  var key = cumKey(day, today);
   if(!cumulative[key]) cumulative[key]={revenue:0,expense:0};
   cumulative[key][field]=val;
   saveCumulative();
@@ -306,7 +322,7 @@ function renderCumulativeDisplay(){
   var html='<div class="tbl-row" style="font-weight:700"><span style="width:50px">Tgl</span><span style="flex:1">Revenue</span><span style="flex:1">Expense</span></div>';
   var totalRev=0, totalExp=0;
   for(var d=1;d<=days;d++){
-    var key=String(d);
+    var key=cumKey(d, today);
     var rev=cumulative[key]?cumulative[key].revenue||0:0;
     var exp=cumulative[key]?cumulative[key].expense||0:0;
     totalRev+=rev; totalExp+=exp;
@@ -494,8 +510,9 @@ function toggleMkt(name){
 // ═══════════════════════════════════════════════════════════════════════════
 function updateSalaryInfo(){
   var totalRev = 0;
+  var prefix = currentMonthPrefix();
   for(var k in cumulative){
-    totalRev += (cumulative[k]?cumulative[k].revenue||0:0);
+    if(k.indexOf(prefix)===0) totalRev += (cumulative[k]?cumulative[k].revenue||0:0);
   }
   // Add today's revenue
   ALL_MENU.forEach(function(m){ totalRev+=reportQty(m)*(settings.menuPrices[m]||0); });
@@ -663,7 +680,7 @@ function generateExcel(){
     var today = new Date(dateVal);
     var days = new Date(today.getFullYear(),today.getMonth()+1,0).getDate();
     for(var d=1;d<=days;d++){
-      var key=String(d);
+      var key=cumKey(d, today);
       var rev=cumulative[key]?cumulative[key].revenue||0:0;
       var exp=cumulative[key]?cumulative[key].expense||0:0;
       if(d===today.getDate()){ rev+=cafeRev+boothRev; exp+=getExpenseTotal(); }
@@ -790,7 +807,7 @@ function generateExcel(){
     for(var dr=0;dr<3;dr++){ ws.getCell('A'+row).value=drs[dr]||''; row++; }
 
     // Update cumulative after download
-    var todayKey = String(today.getDate());
+    var todayKey = cumKey(today.getDate(), today);
     if(!cumulative[todayKey]) cumulative[todayKey]={revenue:0,expense:0};
     cumulative[todayKey].revenue = cafeRev+boothRev;
     cumulative[todayKey].expense = getExpenseTotal();
