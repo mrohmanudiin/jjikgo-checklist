@@ -676,17 +676,20 @@ function generateExcel(){
 
     // Section C: Cumulative
     row = writeSectionHeader(ws,row,'C. Monthly Cumulative Sales');
-    row = writeTableHeader(ws,row,['Date','Daily Revenue','Daily Expense','']);
+    row = writeTableHeader(ws,row,['Date','Daily Revenue (IDR)','Daily Expense (IDR)','Total (IDR)']);
     var today = new Date(dateVal);
     var days = new Date(today.getFullYear(),today.getMonth()+1,0).getDate();
+    var runTotal=0;
     for(var d=1;d<=days;d++){
       var key=cumKey(d, today);
       var rev=cumulative[key]?cumulative[key].revenue||0:0;
       var exp=cumulative[key]?cumulative[key].expense||0:0;
       if(d===today.getDate()){ rev+=cafeRev+boothRev; exp+=getExpenseTotal(); }
+      runTotal+=rev-exp;
       ws.getCell('A'+row).value=pad(d)+'/'+pad(today.getMonth()+1)+'/'+today.getFullYear();
       ws.getCell('B'+row).value=rev;
       ws.getCell('C'+row).value=exp;
+      ws.getCell('D'+row).value=runTotal;
       applyBorder(ws,row,1,4); row++;
     }
     row++;
